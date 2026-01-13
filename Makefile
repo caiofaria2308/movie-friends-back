@@ -8,13 +8,16 @@ up:
 stop:
 	docker compose -f docker-compose.yml -f docker-compose.override.yml stop
 
+restart_app:
+	docker compose -f docker-compose.yml -f docker-compose.override.yml restart app
+
 down:
 	docker compose -f docker-compose.yml -f docker-compose.override.yml down
 
 log_db:
 	docker compose -f docker-compose.yml -f docker-compose.override.yml logs -f postgres
 
-log_app:
+log:
 	docker compose -f docker-compose.yml -f docker-compose.override.yml logs -f app
 
 sh_app:
