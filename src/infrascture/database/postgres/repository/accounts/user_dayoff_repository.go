@@ -40,6 +40,22 @@ func (r *userDayOffRepository) FindAllByOwner(ownerID int) ([]*entity_accounts.U
 	return dayOffs, nil
 }
 
+func (r *userDayOffRepository) FindAllByOwnerWithFilter(ownerID int, startDate, endDate *time.Time) ([]*entity_accounts.UserDayOff, error) {
+	var dayOffs []*entity_accounts.UserDayOff
+	query := r.DB.Where("owner_id = ?", ownerID)
+
+	if startDate != nil && endDate != nil {
+		// Filter day-offs that overlap with the date range
+		// A day-off overlaps if: init_hour < endDate AND end_hour > startDate
+		query = query.Where("init_hour < ? AND end_hour > ?", endDate, startDate)
+	}
+
+	if err := query.Order("init_hour ASC").Find(&dayOffs).Error; err != nil {
+		return nil, err
+	}
+	return dayOffs, nil
+}
+
 func (r *userDayOffRepository) FindFutureByName(fatherID uuid.UUID, fromDate time.Time, ownerID int) ([]*entity_accounts.UserDayOff, error) {
 	var dayOffs []*entity_accounts.UserDayOff
 	// Check init_hour >= fromDate. Using InitHour which is *time.Time.

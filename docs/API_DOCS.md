@@ -117,8 +117,20 @@ To access protected routes, include the token in the `Authorization` header:
 - **URL**: `/api/user/dayoff`
 - **Method**: `GET`
 - **Headers**: `Authorization: Bearer <token>`
+- **Query Parameters** (optional):
+  - `filter_type`: Filter type (`week`, `month`, or `year`)
+  - `year`: Year (required for all filter types, range: 1900-3000)
+  - `week`: Week number (required for `week` filter, range: 1-53)
+  - `month`: Month number (required for `month` filter, range: 1-12)
+- **Examples**:
+  - List all day-offs: `/api/user/dayoff`
+  - List day-offs for week 3 of 2026: `/api/user/dayoff?filter_type=week&year=2026&week=3`
+  - List day-offs for January 2026: `/api/user/dayoff?filter_type=month&year=2026&month=1`
+  - List day-offs for 2026: `/api/user/dayoff?filter_type=year&year=2026`
 - **Response**:
-  - `200 OK`: List of UserDayOff objects
+  - `200 OK`: List of UserDayOff objects (filtered if parameters provided)
+  - `400 Bad Request`: Invalid filter parameters
+  - `500 Internal Server Error`: DB error
 
 ### Update Day Off
 - **URL**: `/api/user/dayoff/:id?mode=[single|future|all]`

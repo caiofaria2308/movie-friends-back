@@ -249,6 +249,54 @@ func (u *userDayOffUseCase) GetById(id uuid.UUID, ownerID int) (*entity_accounts
 	return u.repo.FindByIdAndOwner(id, ownerID)
 }
 
-func (u *userDayOffUseCase) GetAll(ownerID int) ([]*entity_accounts.UserDayOff, error) {
-	return u.repo.FindAllByOwner(ownerID)
+func (u *userDayOffUseCase) GetAll(ownerID int, filterType string, year, week, month int) ([]*entity_accounts.UserDayOff, error) {
+	// If no filter is specified, return all day-offs
+	if filterType == "" {
+		return u.repo.FindAllByOwner(ownerID)
+	}
+
+	// Calculate date range based on filter type
+	var startDate, endDate time.Time
+
+	switch filterType {
+	case "week":
+		if year == 0 || week == 0 || week > 53 {
+			return nil, fmt.Errorf("invalid week filter: year and week (1-53) required")
+		}
+		// Calculate the first day of the week (Monday)
+		// ISO 8601 week starts on Monday
+		firstDayOfYear := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+		// Find the first Monday of the year
+		daysUntilMonday := (8 - int(firstDayOfYear.Weekday())) % 7
+		if firstDayOfYear.Weekday() == time.Sunday {
+			daysUntilMonday = 1
+		} else if firstDayOfYear.Weekday() != time.Monday {
+			daysUntilMonday = int(time.Monday - firstDayOfYear.Weekday())
+			if daysUntilMonday < 0 {
+				daysUntilMonday += 7
+			}
+		}
+		firstMonday := firstDayOfYear.AddDate(0, 0, daysUntilMonday)
+		startDate = firstMonday.AddDate(0, 0, (week-1)*7)
+		endDate = startDate.AddDate(0, 0, 7)
+
+	case "month":
+		if year == 0 || month == 0 || month > 12 {
+			return nil, fmt.Errorf("invalid month filter: year and month (1-12) required")
+		}
+		startDate = time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+		endDate = startDate.AddDate(0, 1, 0)
+
+	case "year":
+		if year == 0 {
+			return nil, fmt.Errorf("invalid year filter: year required")
+		}
+		startDate = time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+		endDate = startDate.AddDate(1, 0, 0)
+
+	default:
+		return nil, fmt.Errorf("invalid filter_type: must be 'week', 'month', or 'year'")
+	}
+
+	return u.repo.FindAllByOwnerWithFilter(ownerID, &startDate, &endDate)
 }

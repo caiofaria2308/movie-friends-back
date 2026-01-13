@@ -6,6 +6,7 @@ import (
 	usecase_accounts "app/usecase/accounts"
 	"app/utils/token"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -239,7 +240,66 @@ func (ar *accountsRouter) ListDayOff(c *gin.Context) {
 		return
 	}
 
-	dayOffs, err := ar.usecase_user_dayoff.GetAll(userId)
+	// Parse filter query parameters
+	filterType := c.Query("filter_type")
+	yearStr := c.Query("year")
+	weekStr := c.Query("week")
+	monthStr := c.Query("month")
+
+	var year, week, month int
+
+	// Parse year if provided
+	if yearStr != "" {
+		year, err = strconv.Atoi(yearStr)
+		if err != nil || year < 1900 || year > 3000 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid year parameter"})
+			return
+		}
+	}
+
+	// Parse week if provided
+	if weekStr != "" {
+		week, err = strconv.Atoi(weekStr)
+		if err != nil || week < 1 || week > 53 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid week parameter (must be 1-53)"})
+			return
+		}
+	}
+
+	// Parse month if provided
+	if monthStr != "" {
+		month, err = strconv.Atoi(monthStr)
+		if err != nil || month < 1 || month > 12 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid month parameter (must be 1-12)"})
+			return
+		}
+	}
+
+	// Validate filter combinations
+	if filterType != "" {
+		switch filterType {
+		case "week":
+			if year == 0 || week == 0 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Week filter requires both 'year' and 'week' parameters"})
+				return
+			}
+		case "month":
+			if year == 0 || month == 0 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Month filter requires both 'year' and 'month' parameters"})
+				return
+			}
+		case "year":
+			if year == 0 {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Year filter requires 'year' parameter"})
+				return
+			}
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid filter_type. Must be 'week', 'month', or 'year'"})
+			return
+		}
+	}
+
+	dayOffs, err := ar.usecase_user_dayoff.GetAll(userId, filterType, year, week, month)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
