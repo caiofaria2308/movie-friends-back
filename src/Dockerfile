@@ -25,6 +25,6 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 EXPOSE 8080
 
-ENTRYPOINT ["/bin/sh", "./docker_assets/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh"]
 
 CMD ["/app/app_bin"]
