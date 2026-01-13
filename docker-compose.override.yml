@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  app:
+    ports:
+      - "8080:8080"
+    build:
+      context: ./src
+      dockerfile: ./Dockerfile-dev
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_SERVICE_NAME=${DB_SERVICE_NAME}
+    depends_on:
+      - postgres
+    volumes:
+      - ./src:/app
+
+  postgres:
+    image: postgres:18-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
