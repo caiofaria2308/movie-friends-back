@@ -11,6 +11,9 @@ import (
 func SetupRouter(DB *gorm.DB) *gin.Engine {
 	r := gin.Default()
 
+	// Aplicar middleware de CORS
+	r.Use(CORSMiddleware())
+
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
