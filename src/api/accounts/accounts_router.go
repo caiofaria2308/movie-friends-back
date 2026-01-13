@@ -18,7 +18,6 @@ type RegisterInput struct {
 	Name     string `json:"name" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
-	Role     string `json:"role" binding:"required,oneof=admin user guest"`
 }
 
 type LoginInput struct {
@@ -62,7 +61,7 @@ func (ar *accountsRouter) Register(c *gin.Context) {
 	user := entity_accounts.User{
 		Name:  input.Name,
 		Email: input.Email,
-		Role:  input.Role,
+		Role:  entity_accounts.ROLE_USER,
 	}
 
 	if err := user.EncryptedPassword(input.Password); err != nil {
