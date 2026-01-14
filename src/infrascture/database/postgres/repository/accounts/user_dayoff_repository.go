@@ -21,7 +21,12 @@ func (r *userDayOffRepository) Create(dayOff *entity_accounts.UserDayOff) error 
 }
 
 func (r *userDayOffRepository) CreateBatch(dayOffs []*entity_accounts.UserDayOff) error {
-	return r.DB.CreateInBatches(dayOffs, 100).Error
+	for _, dayOff := range dayOffs {
+		if err := r.DB.Create(dayOff).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *userDayOffRepository) FindByIdAndOwner(id uuid.UUID, ownerID int) (*entity_accounts.UserDayOff, error) {

@@ -3,6 +3,8 @@ package usecase_accounts
 import (
 	entity_accounts "app/entity/accounts"
 	"fmt"
+	"log"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -36,7 +38,8 @@ func (u *userDayOffUseCase) Create(dayOff *entity_accounts.UserDayOff, ownerID i
 
 	// Handle recurrence in goroutine if needed
 	if dayOff.Repeat && dayOff.RepeatValue != "" {
-		go u.handleRecurrence(dayOff, ownerID)
+		log.Printf("handle recurrence %s", dayOff.RepeatValue)
+		u.handleRecurrence(dayOff, ownerID)
 	}
 
 	return nil
@@ -48,34 +51,33 @@ func (u *userDayOffUseCase) handleRecurrence(father *entity_accounts.UserDayOff,
 	// Since `RepeatValue` format isn't strictly defined, I'll assume it's like "10" for 10 times, or maybe just create a reasonable amount (e.g., 50) for now until specced.
 	// Actually, let's create for 1 year ahead or 50 occurrences max to avoid infinite loop.
 
-	var newDayOffs []*entity_accounts.UserDayOff
-
 	currentStart := *father.InitHour
 	currentEnd := *father.EndHour
-	count := 0
-	maxCount := 52 // Example: 1 year of weekly events
-
-	if father.RepeatType == entity_accounts.RepeatTypeDaily {
-		maxCount = 365
-	}
+	max, _ := strconv.Atoi(father.RepeatValue)
 
 RecurrenceLoop:
-	for i := 0; i < maxCount; i++ {
+	for i := 0; i < max; i++ {
 		// Calculate next date
+		log.Printf("recurrence %d\n Current start: %v, Current end: %v", i, currentStart, currentEnd)
 		switch father.RepeatType {
 		case entity_accounts.RepeatTypeWeekly:
+			log.Printf("weekly recurrence %d", i)
 			currentStart = currentStart.AddDate(0, 0, 7)
 			currentEnd = currentEnd.AddDate(0, 0, 7)
 		case entity_accounts.RepeatTypeDaily:
+			log.Printf("daily recurrence %d", i)
 			currentStart = currentStart.AddDate(0, 0, 1)
 			currentEnd = currentEnd.AddDate(0, 0, 1)
 		case entity_accounts.RepeatTypeMonthly:
+			log.Printf("monthly recurrence %d", i)
 			currentStart = currentStart.AddDate(0, 1, 0)
 			currentEnd = currentEnd.AddDate(0, 1, 0)
 		case entity_accounts.RepeatTypeYearly:
+			log.Printf("yearly recurrence %d", i)
 			currentStart = currentStart.AddDate(1, 0, 0)
 			currentEnd = currentEnd.AddDate(1, 0, 0)
 		default:
+			log.Printf("unknown recurrence type %d", i)
 			break RecurrenceLoop
 		}
 
@@ -92,13 +94,9 @@ RecurrenceLoop:
 			CreatedAt:      time.Now(),
 			UpdatedAt:      time.Now(),
 		}
-		newDayOffs = append(newDayOffs, newDayOff)
-		count++
+		_ = u.repo.Create(newDayOff)
 	}
 
-	if len(newDayOffs) > 0 {
-		_ = u.repo.CreateBatch(newDayOffs)
-	}
 }
 
 func (u *userDayOffUseCase) Update(dayOff *entity_accounts.UserDayOff, ownerID int, mode string) error {
